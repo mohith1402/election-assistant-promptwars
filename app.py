@@ -26,7 +26,7 @@ Rules:
 
 @st.cache_resource
 def load_model():
-    return genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=SYSTEM_INSTRUCTION)
+    return genai.GenerativeModel(model_name="gemini-2.5-flash", system_instruction=SYSTEM_INSTRUCTION)
 
 model = load_model()
 
