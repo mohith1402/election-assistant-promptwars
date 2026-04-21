@@ -1,4 +1,3 @@
-cat << 'EOF' > app.py
 import streamlit as st
 import google.generativeai as genai
 import requests
@@ -27,7 +26,7 @@ Rules:
 
 @st.cache_resource
 def load_model():
-    return genai.GenerativeModel(model_name="gemini-2.5-flash", system_instruction=SYSTEM_INSTRUCTION)
+    return genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=SYSTEM_INSTRUCTION)
 
 model = load_model()
 
@@ -99,4 +98,3 @@ if prompt := st.chat_input("E.g., What ID do I need to bring to vote?"):
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
             except Exception as e:
                 st.error(f"Service temporarily unavailable. Error: {str(e)}")
-EOF
