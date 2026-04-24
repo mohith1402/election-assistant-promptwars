@@ -2,3 +2,5 @@ streamlit
 google-generativeai
 requests
 pytest
+pytest-mock
+google-cloud-logging
