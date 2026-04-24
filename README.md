@@ -1,27 +1,29 @@
-# 🗳️ CivicSync: Election Assistant
+# 🗳️ CivicSync: Your Election Assistant
 
-## 📌 Chosen Vertical
-**Election Process Education** - Providing voters with a non-partisan, easy-to-understand guide for registration, voting steps, and local representation.
+## 📌 What I Built
+I chose the **Election Process Education** vertical. The goal was simple: voting can be confusing, so I built a non-partisan, easy-to-use AI assistant that helps people understand how to register, what to bring, and who represents them locally. 
 
-## 🧠 Approach and Logic
-Our logic relies on a dual-service architecture to maximize accuracy and usability:
-1. **Google Gemini (1.5 Flash):** Acts as the conversational brain, guided by a strict System Prompt to ensure simple language, absolute political neutrality, and redirection of non-civic queries.
-2. **Google Civic Information API:** Integrates live, localized data. Users input their address to securely fetch their real-world representatives, bridging the gap between AI advice and real-world application.
+## 🧠 How It Works Behind the Scenes
+I wanted to combine conversational AI with real-world, local data. Here is how I put it together:
 
-## ⚙️ How the Solution Works
-- **User Interface:** Built with Streamlit for a clean, accessible chat interface.
-- **Conversational Flow:** Users type questions about the election process. The app securely fetches the `GEMINI_API_KEY` from environment variables, queries the model, and displays the response.
-- **Local Lookup:** Using the sidebar, the app securely passes the user's address and `CIVIC_API_KEY` to Google's Civic Info v2 endpoint, parses the JSON response, and surfaces the top local official.
-- **Containerization:** The app is fully containerized using a `Dockerfile` exposing port 8080, making it enterprise-ready for Google Cloud Run.
+1. **The AI Brain (Gemini 2.5 Flash):** I specifically upgraded to the **Gemini 2.5 Flash** model to take advantage of its January 2025 knowledge cutoff, ensuring it understands the most recent election laws. I gave it a strict system prompt to keep it strictly neutral and non-partisan. I also baked in Google's `SafetySettings` to automatically block any harassment or hate speech, and tweaked the `GenerationConfig` to keep the answers factual and concise.
 
-## 🤔 Assumptions Made
-- Users are querying about standard democratic election processes.
-- The Google Civic API will return valid JSON for standard formatted addresses.
-- Environment variables are securely injected by the hosting environment rather than hardcoded.
+2. **The Local Data (Google Civic API):** To make it personal, users can enter their address to look up their local representatives using the Google Civic Information API. 
+   *💡 Fun hackathon hurdle:* I discovered the specific `v2/representatives` endpoint was officially deprecated in April 2025! Instead of letting the app crash with a raw 404 error, I built a custom error-handler that catches this edge case and gracefully explains the deprecation to the user.
+
+## ⚙️ The Tech Stack & Upgrades
+* **Frontend:** Built with Streamlit. I focused heavily on **Accessibility** by adding high-contrast text, tooltips, and ARIA-friendly placeholders so screen readers can easily navigate the app.
+* **The SDK:** Migrated entirely to the new, official `google-genai` Python SDK to avoid legacy deprecation warnings.
+* **Performance:** Implemented `st.cache_resource` and session states to stop the app from re-running API calls on every keystroke, preventing UI freezes. 
+* **Logging:** Hooked up `google-cloud-logging` to track errors cleanly in a production environment.
+
+## ✅ Testing & Reliability
+I didn't just test the "happy paths." To make sure the app doesn't break under pressure, I wrote a full test suite using `pytest`. I also used `unittest.mock` to simulate API failures, server timeouts (503s), and empty user inputs to guarantee the app fails gracefully no matter what. 
 
 ---
-## 🚨 Important Deployment Note for Evaluators
-**Cloud Run Readiness:** This repository contains a fully configured `Dockerfile` designed for Google Cloud Run deployment. 
-**Fallback URL:** Due to persistent regional banking restrictions (RBI mandates) preventing the standard GCP billing verification required to activate Cloud Run, the live preview has been securely hosted on Streamlit Community Cloud. The codebase itself remains 100% Cloud Run ready.
+## 🚨 Note to the Judges: Deployment & Cloud Run
+This repository includes a fully configured `Dockerfile` exposing port 8080, meaning the code is **100% ready for Google Cloud Run**. 
 
-**Live Preview (Fallback):** https://election-assistant-promptwars.streamlit.app/
+However, due to current regional banking restrictions (RBI mandates in India) blocking my Google Cloud billing verification, I couldn't spin up the Cloud Run instance today. To make sure you can still interact with the app, I've deployed a live fallback version using Streamlit Community Cloud.
+
+**Live Preview:** https://election-assistant-promptwars.streamlit.app/
