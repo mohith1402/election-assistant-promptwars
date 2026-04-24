@@ -1,27 +1,38 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import requests
 import os
 import logging
 from google.cloud import logging as gcp_logging
 
-# --- GOOGLE CLOUD LOGGING (Boosts Google Services Score) ---
-try:
-    client = gcp_logging.Client()
-    client.setup_logging()
-except Exception:
-    logging.basicConfig(level=logging.INFO)
-    logging.info("Running without GCP credentials; using standard logging.")
+# --- GOOGLE CLOUD LOGGING (Cached to stop freezing) ---
+@st.cache_resource
+def setup_logging():
+    try:
+        client = gcp_logging.Client()
+        client.setup_logging()
+    except Exception:
+        logging.basicConfig(level=logging.INFO)
+        logging.info("Running without GCP credentials; using standard logging.")
 
-# --- PAGE CONFIGURATION (Accessibility Boost) ---
+setup_logging()
+
+# --- PAGE CONFIGURATION ---
 st.set_page_config(page_title="CivicSync: Election Assistant", page_icon="🗳️", layout="centered", initial_sidebar_state="expanded")
 
 # --- API KEY MANAGEMENT ---
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "dummy_gemini_key")
 CIVIC_API_KEY = os.environ.get("CIVIC_API_KEY", "dummy_civic_key")
 
-if GEMINI_API_KEY != "dummy_gemini_key":
-    genai.configure(api_key=GEMINI_API_KEY)
+# --- GEMINI CLIENT SETUP (NEW SDK) ---
+@st.cache_resource
+def get_gemini_client():
+    if GEMINI_API_KEY != "dummy_gemini_key":
+        return genai.Client(api_key=GEMINI_API_KEY)
+    return None
+
+gemini_client = get_gemini_client()
 
 # --- SYSTEM PROMPT ---
 SYSTEM_INSTRUCTION = """
@@ -34,27 +45,8 @@ Rules:
 4. If a user asks a non-election question, politely redirect them.
 """
 
-@st.cache_resource
-def load_model():
-    # Adding GenerationConfig and SafetySettings to show advanced Google API usage
-    generation_config = genai.types.GenerationConfig(
-        temperature=0.2,
-        max_output_tokens=1024,
-    )
-    safety_settings = [
-        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
-        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
-    ]
-    return genai.GenerativeModel(
-        model_name="gemini-2.5-flash", 
-        system_instruction=SYSTEM_INSTRUCTION,
-        generation_config=generation_config,
-        safety_settings=safety_settings
-    )
-
-model = load_model()
-
 # --- CIVIC API FUNCTION ---
+@st.cache_data
 def get_representatives(address):
     """Fetches local representatives using Google Civic Information API."""
     if not address or address.strip() == "":
@@ -84,12 +76,10 @@ def get_representatives(address):
 # --- FRONTEND UI ---
 st.title("🗳️ CivicSync: Your Election Guide")
 
-# Sidebar for the Google Civic Service Tool
 with st.sidebar:
     st.header("📍 Local Voter Info")
     st.markdown("Enter your address to securely look up your local representatives via Google Civic Services.")
     
-    # ACCESSIBILITY: Added placeholder and help tooltips for screen readers
     address_input = st.text_input(
         "Enter your full address:", 
         placeholder="e.g., 1600 Pennsylvania Avenue NW, Washington, DC",
@@ -109,7 +99,6 @@ with st.sidebar:
         else:
             st.warning("Please enter a valid address.")
 
-# Main Chat Interface
 st.markdown("### Ask me anything about voter registration, election dates, or how the voting process works!")
 
 if "messages" not in st.session_state:
@@ -119,18 +108,32 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ACCESSIBILITY: Added tooltip to chat input
 if prompt := st.chat_input("E.g., What ID do I need to bring to vote?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        if GEMINI_API_KEY == "dummy_gemini_key":
+        if not gemini_client:
             st.warning("⚠️ App is running in test mode. Please configure API Keys in Streamlit secrets to get AI responses.")
         else:
             try:
-                response = model.generate_content(prompt)
+                # ADDED SPINNER SO IT DOESN'T LOOK FROZEN
+                with st.spinner("CivicSync is thinking..."): 
+                    config = types.GenerateContentConfig(
+                        system_instruction=SYSTEM_INSTRUCTION,
+                        temperature=0.2,
+                        max_output_tokens=1024,
+                        safety_settings=[
+                            types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_MEDIUM_AND_ABOVE"),
+                            types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_MEDIUM_AND_ABOVE")
+                        ]
+                    )
+                    response = gemini_client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=prompt,
+                        config=config
+                    )
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
             except Exception as e:
