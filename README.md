@@ -24,4 +24,4 @@ I didn't just test the "happy paths." To make sure the app doesn't break under p
 ## ☁️ Google Cloud Architecture (Deployment)
 This application is fully containerized and deployed natively on **Google Cloud Run**, demonstrating a complete integration of the Google Cloud ecosystem (Gemini GenAI, Google Civic APIs, Google Cloud Logging, and Serverless Cloud Run hosting).
 
-**Live Production App:** https://election-assistant-825382209659.us-central1.run.app/
+**Live Production App:** https://civic-sync-825382209659.us-central1.run.app
