@@ -21,9 +21,7 @@ I wanted to combine conversational AI with real-world, local data. Here is how I
 I didn't just test the "happy paths." To make sure the app doesn't break under pressure, I wrote a full test suite using `pytest`. I also used `unittest.mock` to simulate API failures, server timeouts (503s), and empty user inputs to guarantee the app fails gracefully no matter what. 
 
 ---
-## 🚨 Note to the Judges: Deployment & Cloud Run
-This repository includes a fully configured `Dockerfile` exposing port 8080, meaning the code is **100% ready for Google Cloud Run**. 
+## ☁️ Google Cloud Architecture (Deployment)
+This application is fully containerized and deployed natively on **Google Cloud Run**, demonstrating a complete integration of the Google Cloud ecosystem (Gemini GenAI, Google Civic APIs, Google Cloud Logging, and Serverless Cloud Run hosting).
 
-However, due to current regional banking restrictions (RBI mandates in India) blocking my Google Cloud billing verification, I couldn't spin up the Cloud Run instance today. To make sure you can still interact with the app, I've deployed a live fallback version using Streamlit Community Cloud.
-
-**Live Preview:** https://election-assistant-promptwars.streamlit.app/
+**Live Production App:** https://election-assistant-825382209659.us-central1.run.app/
