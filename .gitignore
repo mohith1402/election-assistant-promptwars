@@ -1,5 +1,8 @@
-venv/
-.venv/
+# Python / Streamlit
 __pycache__/
-.streamlit/
+*.py[cod]
+*$py.class
+.pytest_cache/
 .env
+secrets.toml
+.streamlit/secrets.toml
